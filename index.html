@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AYPG-RM MCQ Assessment Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .card{ @apply bg-white rounded-2xl shadow-lg p-6; }
+    .btn{ @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium shadow-sm transition; }
+    .btn-primary{ @apply bg-indigo-600 text-white hover:bg-indigo-700; }
+    .btn-ghost{ @apply bg-white hover:bg-gray-50 ring-1 ring-gray-200; }
+    .badge{ @apply inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1; }
+    .q{ @apply mb-4; }
+    .q h4{ @apply font-medium; }
+    .q .options{ @apply mt-2 space-y-2; }
+    .pill{ @apply px-2.5 py-1 rounded-full text-xs font-medium; }
+    .progress{ @apply h-2 rounded bg-gray-200 overflow-hidden; }
+    .bar{ @apply h-2 bg-indigo-600; width:0; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-gray-200">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">RM</div>
+    <div>
+      <h1 class="text-xl font-semibold">AYPG-RM MCQ Assessment Tool</h1>
+      <p class="text-sm text-gray-500">NCISM Semester I – Research Methodology (AYPG-RM) | 5 sections × 10 MCQs</p>
+    </div>
+    <div class="ml-auto flex items-center gap-2">
+      <button id="btnStart" class="btn btn-primary">Start Test</button>
+      <button id="btnSubmit" class="btn btn-ghost hidden">Submit & View Report</button>
+      <button id="btnExport" class="btn btn-ghost hidden">Export CSV</button>
+      <button id="btnPrint" class="btn btn-ghost hidden">Print Report</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 grid lg:grid-cols-3 gap-6">
+  <section class="lg:col-span-2 card">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-semibold">Questionnaire</h2>
+        <p class="text-gray-500">All questions are MCQs. You can save your responses as CSV after submission.</p>
+      </div>
+      <div class="space-x-2">
+        <span class="badge">Client-side only</span>
+        <span class="badge" id="itemCount">0 items</span>
+      </div>
+    </div>
+
+    <div id="intro" class="mt-6">
+      <ol class="list-decimal pl-6 text-gray-600 space-y-1">
+        <li>Fill your details in the panel on the right.</li>
+        <li>Click <strong>Start Test</strong> to load the MCQs.</li>
+        <li>When done, click <strong>Submit & View Report</strong> to see your score by section and overall.</li>
+        <li>Use <strong>Export CSV</strong> to download a copy of your responses and scores.</li>
+      </ol>
+    </div>
+
+    <div id="questionContainer" class="mt-6 grid gap-6"></div>
+
+    <div id="report" class="mt-8 hidden">
+      <h3 class="text-xl font-semibold mb-2">Report</h3>
+      <div class="grid md:grid-cols-3 gap-3 mb-4">
+        <div class="bg-gray-50 rounded-xl p-4"><div class="text-sm text-gray-600">Overall Score</div><div class="text-2xl font-bold" id="overallScore">0 / 0</div></div>
+        <div class="bg-gray-50 rounded-xl p-4"><div class="text-sm text-gray-600">Percentage</div><div class="text-2xl font-bold" id="overallPct">0%</div></div>
+        <div class="bg-gray-50 rounded-xl p-4"><div class="text-sm text-gray-600">Time Taken</div><div class="text-2xl font-bold" id="timeTaken">–</div></div>
+      </div>
+      <div id="sectionBreakdown" class="grid md:grid-cols-2 gap-4"></div>
+      <div class="mt-6">
+        <h4 class="font-semibold mb-2">Strengths & Focus Areas</h4>
+        <ul id="insights" class="list-disc pl-6 text-gray-700 space-y-1"></ul>
+      </div>
+    </div>
+  </section>
+
+  <aside class="card h-max sticky top-20">
+    <h3 class="text-lg font-semibold mb-2">Student Details</h3>
+    <div class="grid grid-cols-1 gap-3">
+      <div>
+        <label class="block text-sm text-gray-600">Student ID</label>
+        <input id="studentId" class="w-full rounded-xl border border-gray-300 p-3" placeholder="e.g., 24PG001" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600">Full Name</label>
+        <input id="studentName" class="w-full rounded-xl border border-gray-300 p-3" placeholder="First Last" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600">Attempt</label>
+        <select id="attempt" class="w-full rounded-xl border border-gray-300 p-3">
+          <option>Pre</option>
+          <option>Post</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h4 class="text-sm font-semibold text-gray-700 mb-2">Progress</h4>
+      <div class="bg-gray-50 rounded-xl p-4">
+        <div class="flex items-center justify-between text-sm text-gray-600 mb-2"><span>Answered</span><span id="answeredCount">0</span></div>
+        <div class="progress"><div id="progressBar" class="bar"></div></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+// ===== MCQ BANK (5 sections × 10 each) =====
+// Each item: { id, q, options:[...], correct, rationale }
+const BANK = [
+  { title: 'Research Basics', items: [
+    {id:'RB1', q:'Evidence-Based Medicine (EBM) best describes:', options:[
+      'Use of classical texts only','Integration of best evidence, clinical expertise, and patient values',
+      'Only randomized trials','Only expert opinion'], correct:1, rationale:'EBM integrates best research evidence with clinical expertise and patient preferences.'},
+    {id:'RB2', q:'Highest level on the traditional evidence pyramid is:', options:['Case series','Case-control study','Cohort study','Systematic review/meta-analysis'], correct:3, rationale:'Meta-analyses synthesize multiple studies and sit at the top of the traditional pyramid.'},
+    {id:'RB3', q:'In PICO(T), the “C” stands for:', options:['Comparator/Control','Community','Confounder','Correlation'], correct:0, rationale:'Comparator or Control group.'},
+    {id:'RB4', q:'Which is NOT part of the research process?', options:['Literature review','Hypothesis formulation','Horoscope consultation','Data analysis'], correct:2, rationale:'Horoscopes are not part of scientific research.'},
+    {id:'RB5', q:'FINER criterion element that checks novelty is:', options:['Feasible','Interesting','Novel','Ethical'], correct:2, rationale:'N = Novel.'},
+    {id:'RB6', q:'Null hypothesis (H0) usually states:', options:['There is an effect','Groups differ significantly','No difference or no effect','Effect size is large'], correct:2, rationale:'H0 assumes no difference; we seek evidence to reject it.'},
+    {id:'RB7', q:'A variable recorded as Pain score 0–10 is:', options:['Nominal','Ordinal','Interval/Ratio (quantitative)','Binary'], correct:2, rationale:'Numeric scale with meaningful differences; treated as quantitative.'},
+    {id:'RB8', q:'Best database for biomedical literature:', options:['PubMed','Instagram','Reddit','Pinterest'], correct:0, rationale:'PubMed indexes biomedical research.'},
+    {id:'RB9', q:'Sampling where every member has equal chance:', options:['Convenience sampling','Purposive sampling','Simple random sampling','Quota sampling'], correct:2, rationale:'Simple random sampling gives equal probability.'},
+    {id:'RB10', q:'Type I error (α) means:', options:['Failing to detect a true effect','Detecting an effect that does not exist','Large sample bias','Measurement error'], correct:1, rationale:'Type I error = false positive.'},
+  ]},
+
+  { title: 'Ethics & Regulatory', items: [
+    {id:'ER1', q:'Core ethical principles include all EXCEPT:', options:['Autonomy','Beneficence','Non-maleficence','Profitability'], correct:3, rationale:'Profit is not an ethical principle.'},
+    {id:'ER2', q:'In India, trial registration prior to enrollment should be on:', options:['CTRI','ClinicalTrials.gov','Scopus','PubMed'], correct:0, rationale:'CTRI registration is mandated in India.'},
+    {id:'ER3', q:'Who oversees animal experimentation ethics in India?', options:['CPCSEA','ICMR','UGC','AICTE'], correct:0, rationale:'CPCSEA regulates animal ethics.'},
+    {id:'ER4', q:'Key element of informed consent is NOT:', options:['Voluntariness','Adequate information','Coercion','Comprehension'], correct:2, rationale:'Consent must be free of coercion.'},
+    {id:'ER5', q:'Institutional Ethics Committee (IEC) primarily:', options:['Writes the protocol','Markets the product','Protects participant rights and safety','Publishes the results'], correct:2, rationale:'IEC safeguards participants and reviews ethics.'},
+    {id:'ER6', q:'Pharmacovigilance mainly concerns:', options:['Quality control only','Adverse drug reaction reporting and safety monitoring','Marketing approvals','Patent filing'], correct:1, rationale:'PV systems track ADRs and safety.'},
+    {id:'ER7', q:'Copyright protects:', options:['Inventions','Brand names','Literary/creative works','Geographical indications'], correct:2, rationale:'Copyright covers literary/artistic works.'},
+    {id:'ER8', q:'Patent protects:', options:['New inventions/innovations','Moral rights','Peer review','Authorship order'], correct:0, rationale:'Patents protect inventions meeting criteria.'},
+    {id:'ER9', q:'Enrolling children without guardian consent violates primarily:', options:['Justice','Autonomy','Confidentiality','Scientometrics'], correct:1, rationale:'Autonomy—via appropriate consent—must be respected.'},
+    {id:'ER10', q:'Good Clinical Practice (GCP) ensures:', options:['Fast publication','Ethical and scientifically sound trials','Lower costs','Guaranteed efficacy'], correct:1, rationale:'GCP focuses on ethics and data integrity.'},
+  ]},
+
+  { title: 'Research Types', items: [
+    {id:'RT1', q:'Case–control studies measure association using:', options:['Risk ratio','Odds ratio','Mean difference','Hazard ratio'], correct:1, rationale:'Odds ratio is typical for case–control.'},
+    {id:'RT2', q:'Cohort studies are best to estimate:', options:['Prevalence','Incidence and risk','Median survival only','Diagnostic accuracy'], correct:1, rationale:'Cohorts track incidence/risk.'},
+    {id:'RT3', q:'Cross-sectional studies primarily estimate:', options:['Prevalence at a point','Causal effects','Incidence over time','Treatment efficacy'], correct:0, rationale:'Snapshot prevalence.'},
+    {id:'RT4', q:'Gold standard for evaluating efficacy:', options:['Case series','RCT','Ecological study','Narrative review'], correct:1, rationale:'Randomized Controlled Trials minimize bias.'},
+    {id:'RT5', q:'Selection bias is minimized mainly by:', options:['Randomization','Blinding outcome assessors','Increasing sample size','Using p<0.05'], correct:0, rationale:'Randomization balances groups.'},
+    {id:'RT6', q:'Qualitative method commonly used:', options:['Focus group discussion','Two-sample t-test','Kaplan–Meier curve','Chi-square test'], correct:0, rationale:'FGD is qualitative.'},
+    {id:'RT7', q:'N-of-1 trial means:', options:['One participant multiple crossover cycles','One center only','One outcome only','One investigator only'], correct:0, rationale:'Individualized multiple crossover for a single patient.'},
+    {id:'RT8', q:'Descriptive study example:', options:['Case series','RCT','Case–control','Cohort'], correct:0, rationale:'Case series describes without comparison.'},
+    {id:'RT9', q:'Sample size increases when we aim for:', options:['Lower power','Larger α error','Smaller detectable effect size','Greater measurement error'], correct:2, rationale:'Detecting smaller effects requires larger n.'},
+    {id:'RT10', q:'Information bias can be reduced by:', options:['Standardized measurement tools/procedures','Convenience sampling','Open-label design','Post-hoc subgrouping'], correct:0, rationale:'Standardization reduces misclassification.'},
+  ]},
+
+  { title: 'Research Communication', items: [
+    {id:'RC1', q:'Correct IMRAD order is:', options:['Introduction–Methods–Results–Discussion','Methods–Introduction–Results–Discussion','Results–Introduction–Discussion–Methods','Introduction–Results–Methods–Discussion'], correct:0, rationale:'IMRAD = Intro, Methods, Results, Discussion.'},
+    {id:'RC2', q:'PRISMA is a reporting guideline for:', options:['Case reports','RCTs','Systematic reviews/meta-analyses','Animal experiments'], correct:2, rationale:'PRISMA covers SR/MA.'},
+    {id:'RC3', q:'CONSORT is used for:', options:['Cohort studies','Randomized trials','Qualitative research','Case series'], correct:1, rationale:'CONSORT = RCT reporting.'},
+    {id:'RC4', q:'CARE is used for:', options:['Case reports','Economic evaluations','Cross-sectional studies','Laboratory assays'], correct:0, rationale:'CARE = case reports.'},
+    {id:'RC5', q:'ARRIVE pertains to:', options:['Animal research reporting','Impact factor calculation','Peer-review ethics','Grant writing'], correct:0, rationale:'ARRIVE = animal research.'},
+    {id:'RC6', q:'Reference manager example:', options:['Mendeley','PowerPoint','Photoshop','Git'], correct:0, rationale:'Mendeley, Zotero, EndNote are reference managers.'},
+    {id:'RC7', q:'Plagiarism means:', options:['Summarizing with citation','Using others’ work without proper attribution','Quoting with quotation marks','Paraphrasing with reference'], correct:1, rationale:'Unattributed use = plagiarism.'},
+    {id:'RC8', q:'h-index measures:', options:['Journal impact','Author’s cumulative citation impact','Study validity','Grant success rate'], correct:1, rationale:'h-index reflects author impact.'},
+    {id:'RC9', q:'A hallmark of predatory journals is:', options:['Rigorous peer review','Clear indexing and metrics','Aggressive solicitations with unrealistic timelines','COPE membership'], correct:2, rationale:'Predatory journals solicit quick publication with poor review.'},
+    {id:'RC10', q:'Journal Impact Factor roughly reflects:', options:['Average citations to recent articles','Acceptance rate','Editorial board size','Open access fee'], correct:0, rationale:'IF ~ average citations to articles over a period.'},
+  ]},
+
+  { title: 'Application & Analysis', items: [
+    {id:'AA1', q:'Best test to compare means of two independent normal groups:', options:['Chi-square test','Independent-samples t-test','Paired t-test','Mann–Whitney U test for paired data'], correct:1, rationale:'Independent t-test compares two independent means.'},
+    {id:'AA2', q:'p = 0.03 means:', options:['There is a 97% chance H0 is true','Observed data as or more extreme are likely under H0 with probability 0.03','Effect size is large','Study is unbiased'], correct:1, rationale:'p-value is probability of data (or more extreme) under H0.'},
+    {id:'AA3', q:'95% CI for mean difference excludes 0. Interpretation:', options:['Not statistically significant','Statistically significant at 5% level','Type II error certain','Sample size inadequate'], correct:1, rationale:'If CI excludes 0, difference is significant at α=0.05.'},
+    {id:'AA4', q:'Select correct graph for distribution of a quantitative variable:', options:['Histogram','Pie chart','Stacked bar for groups','Network map'], correct:0, rationale:'Histogram shows distribution of numeric data.'},
+    {id:'AA5', q:'Choosing an assessment tool should prioritize:', options:['Aesthetics','Cultural and language validity + reliability','Length only','Popularity'], correct:1, rationale:'Validity, reliability, and cultural fit are key.'},
+    {id:'AA6', q:'Chi-square test is typically used for:', options:['Comparing two means','Association between categorical variables','Comparing variances','Time-to-event analysis'], correct:1, rationale:'Chi-square tests association between categories.'},
+    {id:'AA7', q:'Which helps select a suitable journal?', options:['h-index of author','Journal finder + indexing + scope match','Number of reviewers','APC only'], correct:1, rationale:'Use journal finder, indexing, aims & scope.'},
+    {id:'AA8', q:'When to prefer Mann–Whitney U over t-test?', options:['Non-normal data or ordinal outcomes','Always','With paired data only','For >2 groups'], correct:0, rationale:'Non-parametric alternative for two independent groups.'},
+    {id:'AA9', q:'Power of a study increases with:', options:['Smaller sample','Larger measurement error','Larger sample and effect size','Higher α only'], correct:2, rationale:'Power increases with n and effect size (and lower variance).'},
+    {id:'AA10', q:'Vancouver style is primarily:', options:['Author–date style','Numeric citation style','Footnote-only style','No citation style'], correct:1, rationale:'Vancouver is numeric.'},
+  ]},
+];
+
+// ===== STATE =====
+let startTime = null;
+const answers = {}; // { id: optionIndex }
+
+// ===== HELPERS =====
+function $(id){ return document.getElementById(id); }
+function setProgress(){
+  const total = BANK.reduce((s,sec)=>s+sec.items.length,0);
+  const ans = Object.keys(answers).length;
+  $('answeredCount').textContent = `${ans} / ${total}`;
+  const pct = Math.round((ans/total)*100);
+  $('progressBar').style.width = pct + '%';
+}
+
+function renderQuestions(){
+  const container = $('questionContainer');
+  container.innerHTML = '';
+  let totalCount = 0;
+  BANK.forEach((section, si)=>{
+    const sec = document.createElement('div');
+    sec.className = 'border border-gray-200 rounded-2xl p-5';
+    sec.innerHTML = `<div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-semibold">${section.title}</h3>
+      <span class="text-xs text-gray-500">10 items</span>
+    </div>`;
+
+    section.items.forEach((item, i)=>{
+      totalCount++;
+      const wrap = document.createElement('div');
+      wrap.className = 'q';
+      wrap.innerHTML = `<h4>${i+1}. ${item.q}</h4>`;
+      const opts = document.createElement('div');
+      opts.className = 'options';
+      item.options.forEach((opt, oi)=>{
+        const id = `${item.id}_${oi}`;
+        const row = document.createElement('label');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `<input type="radio" name="${item.id}" id="${id}" class="h-4 w-4" value="${oi}"> <span>${String.fromCharCode(97+oi)}) ${opt}</span>`;
+        row.querySelector('input').addEventListener('change', ()=>{ answers[item.id] = oi; setProgress(); });
+        opts.appendChild(row);
+      });
+      wrap.appendChild(opts);
+
+      sec.appendChild(wrap);
+    });
+
+    container.appendChild(sec);
+  });
+  $('itemCount').textContent = totalCount + ' items';
+}
+
+function grade(){
+  let total = 0, correct = 0;
+  const perSection = [];
+  BANK.forEach(section=>{
+    let t = 0, c = 0;
+    section.items.forEach(it=>{ t++; total++; if(answers[it.id]===it.correct) { c++; correct++; } });
+    perSection.push({ title: section.title, total:t, correct:c, pct: Math.round((c/t)*100) });
+  });
+  const pct = total? Math.round((correct/total)*100) : 0;
+  return { total, correct, pct, perSection };
+}
+
+function buildReport(){
+  const { total, correct, pct, perSection } = grade();
+  // header stats
+  $('overallScore').textContent = `${correct} / ${total}`;
+  $('overallPct').textContent = `${pct}%`;
+  const secs = $('sectionBreakdown');
+  secs.innerHTML='';
+  perSection.forEach(s=>{
+    const card = document.createElement('div');
+    card.className = 'bg-gray-50 rounded-xl p-4';
+    card.innerHTML = `<div class="flex items-center justify-between mb-2">
+      <div class="font-medium">${s.title}</div>
+      <div class="text-sm text-gray-600">${s.correct} / ${s.total} (${s.pct}%)</div>
+    </div>
+    <div class="progress"><div class="bar" style="width:${s.pct}%"></div></div>`;
+    secs.appendChild(card);
+  });
+  // insights
+  const best = [...perSection].sort((a,b)=>b.pct-a.pct);
+  const ul = $('insights'); ul.innerHTML='';
+  if(best.length){
+    const li1 = document.createElement('li'); li1.textContent = `Strongest area: ${best[0].title}`; ul.appendChild(li1);
+    const li2 = document.createElement('li'); li2.textContent = `Area to focus: ${best[best.length-1].title}`; ul.appendChild(li2);
+  }
+}
+
+function exportCSV(){
+  const row = {
+    timestamp: new Date().toISOString(),
+    attempt: $('attempt').value,
+    studentId: $('studentId').value || '',
+    studentName: $('studentName').value || ''
+  };
+  // answers
+  BANK.forEach(section=>section.items.forEach(it=>{ row[it.id] = (answers[it.id] ?? '') }));
+  const g = grade();
+  row._total = g.total; row._correct = g.correct; row._pct = g.pct;
+  // Build CSV
+  const headers = Object.keys(row);
+  const values = headers.map(h => '"' + String(row[h]).replaceAll('"','""') + '"');
+  const csv = headers.join(',') + '\n' + values.join(',');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  const id = row.studentId || 'anonymous';
+  a.href = URL.createObjectURL(blob);
+  a.download = `${id}_${row.attempt}_AYPG-RM_MCQ.csv`;
+  a.click();
+}
+
+// ===== UI wires =====
+$('btnStart').addEventListener('click', ()=>{
+  startTime = Date.now();
+  $('intro').classList.add('hidden');
+  renderQuestions();
+  setProgress();
+  $('btnSubmit').classList.remove('hidden');
+});
+
+$('btnSubmit').addEventListener('click', ()=>{
+  // Time taken
+  if(startTime){
+    const secs = Math.max(1, Math.round((Date.now()-startTime)/1000));
+    const mm = Math.floor(secs/60), ss = secs%60;
+    $('timeTaken').textContent = `${mm}m ${ss}s`;
+  }
+  buildReport();
+  $('report').classList.remove('hidden');
+  $('btnExport').classList.remove('hidden');
+  $('btnPrint').classList.remove('hidden');
+  // Auto-scroll to report
+  document.getElementById('report').scrollIntoView({behavior:'smooth'});
+});
+
+$('btnExport').addEventListener('click', exportCSV);
+$('btnPrint').addEventListener('click', ()=> window.print());
+
+</script>
+</body>
+</html>
